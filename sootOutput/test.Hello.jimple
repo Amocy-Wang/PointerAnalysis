@@ -1,0 +1,92 @@
+public class test.Hello extends java.lang.Object
+{
+    private static final java.util.Random random;
+
+    public void <init>()
+    {
+        test.Hello r0;
+
+        r0 := @this: test.Hello;
+
+        specialinvoke r0.<java.lang.Object: void <init>()>();
+
+        return;
+    }
+
+    public static void main(java.lang.String[])
+    {
+        java.lang.String[] r0;
+        benchmark.objects.B r4, $r7, $r10, $r11, $r12;
+        benchmark.objects.A $r5, $r6;
+        java.util.Random $r8, $r9;
+        int $i0, $i1;
+
+        r0 := @parameter0: java.lang.String[];
+
+        staticinvoke <benchmark.internal.Benchmark: void alloc(int)>(1);
+
+        $r5 = new benchmark.objects.A;
+
+        specialinvoke $r5.<benchmark.objects.A: void <init>()>();
+
+        staticinvoke <benchmark.internal.Benchmark: void alloc(int)>(2);
+
+        $r6 = new benchmark.objects.A;
+
+        specialinvoke $r6.<benchmark.objects.A: void <init>()>();
+
+        staticinvoke <benchmark.internal.Benchmark: void alloc(int)>(3);
+
+        $r7 = new benchmark.objects.B;
+
+        specialinvoke $r7.<benchmark.objects.B: void <init>()>();
+
+        $r6.<benchmark.objects.A: benchmark.objects.B g> = $r7;
+
+        $r8 = <test.Hello: java.util.Random random>;
+
+        $i0 = virtualinvoke $r8.<java.util.Random: int nextInt()>();
+
+        $r9 = <test.Hello: java.util.Random random>;
+
+        $i1 = virtualinvoke $r9.<java.util.Random: int nextInt()>();
+
+        if $i0 >= $i1 goto label1;
+
+        $r12 = $r6.<benchmark.objects.A: benchmark.objects.B g>;
+
+        $r5.<benchmark.objects.A: benchmark.objects.B f> = $r12;
+
+     label1:
+        staticinvoke <benchmark.internal.Benchmark: void alloc(int)>(4);
+
+        $r10 = new benchmark.objects.B;
+
+        specialinvoke $r10.<benchmark.objects.B: void <init>()>();
+
+        r4 = $r5.<benchmark.objects.A: benchmark.objects.B f>;
+
+        $r6.<benchmark.objects.A: benchmark.objects.B g> = $r10;
+
+        staticinvoke <benchmark.internal.Benchmark: void test(int,java.lang.Object)>(1, r4);
+
+        $r11 = $r6.<benchmark.objects.A: benchmark.objects.B g>;
+
+        staticinvoke <benchmark.internal.Benchmark: void test(int,java.lang.Object)>(2, $r11);
+
+        return;
+    }
+
+    static void <clinit>()
+    {
+        java.util.Random $r0;
+
+        $r0 = new java.util.Random;
+
+        specialinvoke $r0.<java.util.Random: void <init>()>();
+
+        <test.Hello: java.util.Random random> = $r0;
+
+        return;
+    }
+}
