@@ -19,7 +19,7 @@ public class AnalysisMain {
 			"-p", "cg.spark", "enabled:true",
 			"-p", "wjtp.mypta", "enabled:true",
 			"-soot-class-path", classpath,
-			"test.Hello"//FieldSensitivity"//args[1]				
+			"test.FieldSensitivity"//args[1]				
 		});
 	}
 
