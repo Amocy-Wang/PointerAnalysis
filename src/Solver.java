@@ -74,7 +74,7 @@ public class Solver {
 					e1.getValue().memorySet.add(e.getKey());
 			}
 		}*/
-		Set<Variable> whole = new TreeSet<Variable>();
+		/*Set<Variable> whole = new TreeSet<Variable>();
 		whole.addAll(variables.values());
 		whole.addAll(variable_fields.values());
 		boolean flag = true;
@@ -161,7 +161,7 @@ public class Solver {
 					}
 				}
 			}
-		}
+		}*/
 		for(Entry<Integer, Object> e:queries.entrySet()) {
 			System.out.print(e.getKey() + ":");
 			if(e.getValue() instanceof Local) {

@@ -1,13 +1,14 @@
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import jas.Method;
+import java_cup.runtime.virtual_parse_stack;
 import soot.*;
 import soot.jimple.AnyNewExpr;
 import soot.jimple.ArrayRef;
 import soot.jimple.AssignStmt;
 import soot.jimple.FieldRef;
 import soot.jimple.IdentityStmt;
+import soot.jimple.IfStmt;
 import soot.jimple.InstanceFieldRef;
 import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.IntConstant;
@@ -16,11 +17,14 @@ import soot.jimple.InvokeStmt;
 import soot.jimple.NewArrayExpr;
 import soot.jimple.ParameterRef;
 import soot.jimple.ThisRef;
-import soot.jimple.toolkits.annotation.nullcheck.LocalRefVarsAnalysisWrapper;
+import soot.toolkits.graph.BriefUnitGraph;
+import soot.toolkits.graph.UnitGraph;
 import soot.util.Switch;
 
 public class Transformer extends SceneTransformer{
 	int allocateID;
+	HashMap<String, Integer> graphnum = new HashMap<>();
+	HashMap<String, HashMap<Unit, Integer>> methodUnit = new HashMap<>();
 	public Solver solver = new Solver();
 	@Override
 	protected void internalTransform(String arg0, Map<String, String> arg1) {
@@ -33,14 +37,57 @@ public class Transformer extends SceneTransformer{
 			 e.printStackTrace();//System.out.println("error");
 		 }
 	}
+	void gothroughGraph(HashMap<Unit, Integer> isinscope, UnitGraph graph, Unit unit, String method_Name, ArrayList<Unit> t) {
+		t.add(unit);
+		List<Unit> us = graph.getSuccsOf(unit);
+		if(us.size() == 0) {
+			Integer tmp = graphnum.get(method_Name);
+			tmp += 1;
+			graphnum.put(method_Name, tmp);
+			for(Unit u:t) {
+				if(isinscope.containsKey(u)){
+					tmp = isinscope.get(u);
+					tmp += 1;
+					isinscope.put(u, tmp);
+				}
+				else {
+					isinscope.put(u, 1);
+				}
+			}
+			t.remove(t.size() - 1);
+			return;
+		}
+		Iterator<Unit> i = us.iterator();
+		while (i.hasNext()) {
+			gothroughGraph(isinscope, graph, i.next(), method_Name, t);
+		}
+		t.remove(t.size() - 1);
+	}
 	void SolveMethod(SootMethod method, String lastMethodString, List<Value> args, Variable thisVar) {
+		UnitGraph graph = new BriefUnitGraph(method.getActiveBody());
+		if(!graphnum.containsKey(method.getSignature())) { 
+			HashMap<Unit, Integer> isinscope = new HashMap<>();
+			graphnum.put(method.getSignature(), new Integer(0));
+			gothroughGraph(isinscope, graph, graph.getHeads().iterator().next(), method.getSignature(), new ArrayList<>());
+			methodUnit.put(method.getSignature(), isinscope);
+		}
+		HashMap<Unit, Integer> isinscope = methodUnit.get(method.getSignature());
 		for(Unit u:method.getActiveBody().getUnits()){
-			SolveUnit(u, method.getSignature(), lastMethodString, args, thisVar);
+			System.out.println(u);
+			//System.err.println(u.branches());
+			System.out.println(isinscope.get(u));
+			System.out.println(graphnum.get(method.getSignature()));
+			SolveUnit(u, method.getSignature() + u.getJavaSourceStartLineNumber(), lastMethodString, args, thisVar, isinscope.get(u) != graphnum.get(method.getSignature()));
 		}	
 	}
-	void SolveUnit(Unit unit, String method_Name, String lastMethodString, List<Value> args, Variable thisVar) {
-		System.out.println(unit);
+	void SolveUnit(Unit unit, String method_Name, String lastMethodString, List<Value> args, Variable thisVar, boolean isinscope) {
+		//System.out.println(unit.toString() + unit.getClass());
 		try{
+			if(unit instanceof IfStmt) {
+				IfStmt ifStmt = (IfStmt)unit;
+				System.out.println(ifStmt.getTarget());
+				
+			}
 			if(unit instanceof IdentityStmt) {
 				IdentityStmt identityStmt = (IdentityStmt)unit;
 				Value lValue = identityStmt.getLeftOp();
@@ -74,6 +121,7 @@ public class Transformer extends SceneTransformer{
 							solver.variable_fields.put(method_Name + lValue, lVariable);
 					}
 					lVariable.assignVariable.add(variable);
+					lVariable.assign(variable, false, solver.variables, solver.memory_variables);
 				}
 				if(rValue instanceof ThisRef) {
 					Variable lVariable = null;
@@ -92,9 +140,10 @@ public class Transformer extends SceneTransformer{
 						if(lValue instanceof FieldRef)
 							solver.variable_fields.put(method_Name + lValue, lVariable);
 					}
-					if(thisVar != null)
+					if(thisVar != null) {
 						lVariable.assignVariable.add(thisVar);
-					
+						lVariable.assign(thisVar, false, solver.variables, solver.memory_variables);
+					}
 				}
 				//左参数为this
 			}
@@ -167,6 +216,7 @@ public class Transformer extends SceneTransformer{
 						//其他值
 					}
 					lVariable.assignVariable.add(rVariable);
+					lVariable.assign(rVariable, isinscope, solver.variables, solver.memory_variables);
 				}
 			}
 			else if(unit instanceof InvokeStmt) {
