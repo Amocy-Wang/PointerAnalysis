@@ -1,3 +1,5 @@
+import java.io.File;
+import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
@@ -162,23 +164,36 @@ public class Solver {
 				}
 			}
 		}*/
-		for(Entry<Integer, Object> e:queries.entrySet()) {
-			System.out.print(e.getKey() + ":");
-			if(e.getValue() instanceof Local) {
-				Variable tmp = variables.get(queries_methodname.get(e.getKey()) + (Local)e.getValue());
-				for(Integer x:tmp.memorySet) {
-					System.out.print(x + " ");
+		try {
+			FileWriter fileWriter = new FileWriter(new File("result.txt"));
+			for(Entry<Integer, Object> e:queries.entrySet()) {
+				System.out.print(e.getKey() + ":");
+				fileWriter.write(e.getKey() + ":");
+				if(e.getValue() instanceof Local) {
+					Variable tmp = variables.get(queries_methodname.get(e.getKey()) + (Local)e.getValue());
+					for(Integer x:tmp.memorySet) {
+						System.out.print(x + " ");
+						fileWriter.write(x + " ");
+					}
 				}
-			}
-			if(e.getValue() instanceof FieldRef) {
-				Variable variable = variable_fields.get(queries_methodname.get(e.getKey()) + (FieldRef)e.getValue());
-				for(Integer x:variable.memorySet) {
-					Variable tmp = memory_variables.get(x.toString() + variable.field.getField().toString());
-					for(Integer y:tmp.memorySet)
-						System.out.println(y + " ");
+				if(e.getValue() instanceof FieldRef) {
+					Variable variable = variable_fields.get(queries_methodname.get(e.getKey()) + (FieldRef)e.getValue());
+					for(Integer x:variable.memorySet) {
+						Variable tmp = memory_variables.get(x.toString() + variable.field.getField().toString());
+						for(Integer y:tmp.memorySet) {
+							System.out.println(y + " ");
+							fileWriter.write(y + " ");
+						}
+					}
 				}
-			}
-			System.out.println();
+				fileWriter.write("\n");
+				System.out.println();
+			}	
+			fileWriter.flush();
+			fileWriter.close();
+		}
+		catch(Exception e) {
+			e.printStackTrace();
 		}
 		for(Entry<String, Variable> e:variables.entrySet()) {
 			System.out.print(e.getKey() + " ");

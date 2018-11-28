@@ -1,0 +1,81 @@
+public class test.MyTest4 extends java.lang.Object
+{
+
+    public void <init>()
+    {
+        test.MyTest4 r0;
+
+        r0 := @this: test.MyTest4;
+
+        specialinvoke r0.<java.lang.Object: void <init>()>();
+
+        return;
+    }
+
+    public static void main(java.lang.String[])
+    {
+        java.lang.String[] r0;
+        benchmark.objects.B $r6, $r9, $r10, $r11, $r12;
+        benchmark.objects.A $r7, $r8;
+        int i0, i1;
+
+        r0 := @parameter0: java.lang.String[];
+
+        i0 = 10;
+
+        staticinvoke <benchmark.internal.Benchmark: void alloc(int)>(1);
+
+        $r6 = new benchmark.objects.B;
+
+        specialinvoke $r6.<benchmark.objects.B: void <init>()>();
+
+        staticinvoke <benchmark.internal.Benchmark: void alloc(int)>(2);
+
+        $r7 = new benchmark.objects.A;
+
+        specialinvoke $r7.<benchmark.objects.A: void <init>(benchmark.objects.B)>($r6);
+
+        staticinvoke <benchmark.internal.Benchmark: void alloc(int)>(3);
+
+        $r8 = new benchmark.objects.A;
+
+        specialinvoke $r8.<benchmark.objects.A: void <init>()>();
+
+        $r9 = new benchmark.objects.B;
+
+        specialinvoke $r9.<benchmark.objects.B: void <init>()>();
+
+     label1:
+        $r10 = new benchmark.objects.B;
+
+        specialinvoke $r10.<benchmark.objects.B: void <init>()>();
+
+        $r7.<benchmark.objects.A: benchmark.objects.B f> = $r10;
+
+        i0 = i0 + -1;
+
+        if i0 > 0 goto label1;
+
+        $r11 = $r7.<benchmark.objects.A: benchmark.objects.B f>;
+
+        staticinvoke <benchmark.internal.Benchmark: void test(int,java.lang.Object)>(1, $r11);
+
+        staticinvoke <benchmark.internal.Benchmark: void test(int,java.lang.Object)>(2, $r7);
+
+        i1 = 10;
+
+     label2:
+        if i1 <= 0 goto label3;
+
+        $r12 = new benchmark.objects.B;
+
+        specialinvoke $r12.<benchmark.objects.B: void <init>()>();
+
+        i1 = i1 + -1;
+
+        goto label2;
+
+     label3:
+        return;
+    }
+}

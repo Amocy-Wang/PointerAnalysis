@@ -1,5 +1,4 @@
 import java.util.*;
-
 import jas.Method;
 import java_cup.runtime.virtual_parse_stack;
 import soot.*;
@@ -16,6 +15,7 @@ import soot.jimple.InvokeExpr;
 import soot.jimple.InvokeStmt;
 import soot.jimple.NewArrayExpr;
 import soot.jimple.ParameterRef;
+import soot.jimple.ReturnStmt;
 import soot.jimple.ThisRef;
 import soot.toolkits.graph.BriefUnitGraph;
 import soot.toolkits.graph.UnitGraph;
@@ -65,7 +65,7 @@ public class Transformer extends SceneTransformer{
 		}
 		t.remove(t.size() - 1);
 	}
-	void SolveMethod(SootMethod method, String lastMethodString, List<Value> args, Variable thisVar, ArrayList<String> methods, int UnitNum) {
+	Variable SolveMethod(SootMethod method, String lastMethodString, List<Value> args, Variable thisVar, ArrayList<String> methods, int UnitNum) {
 		//System.out.println("---" + lastMethodString);
 		UnitGraph graph = new BriefUnitGraph(method.getActiveBody());
 		if(!graphnum.containsKey(method.getSignature())) { 
@@ -76,22 +76,24 @@ public class Transformer extends SceneTransformer{
 		}
 		HashMap<Unit, Integer> isinscope = methodUnit.get(method.getSignature());
 		int num = 0;
+		Variable ans = null;
 		for(Unit u:method.getActiveBody().getUnits()){
 			System.out.println(u);
 			//System.err.println(u.branches());
 			//System.out.println(isinscope.get(u));
 			//System.out.println(graphnum.get(method.getSignature()));
-			SolveUnit(u, lastMethodString + method.getSignature() + UnitNum, lastMethodString, args, thisVar, isinscope.get(u) != graphnum.get(method.getSignature()), methods, num);
+			ans = SolveUnit(u, lastMethodString + method.getSignature() + UnitNum, lastMethodString, args, thisVar, isinscope.get(u) != graphnum.get(method.getSignature()), methods, num);
 			num += 1;
 		}	
+		return ans;
 	}
-	void SolveUnit(Unit unit, String method_Name, String lastMethodString, List<Value> args, Variable thisVar, boolean isinscope, ArrayList<String> methods, int num) {
+	Variable SolveUnit(Unit unit, String method_Name, String lastMethodString, List<Value> args, Variable thisVar, boolean isinscope, ArrayList<String> methods, int num) {
 		//System.out.println(unit.toString() + unit.getClass());
 		try{
-			if(unit instanceof IfStmt) {
+			/*if(unit instanceof IfStmt) {
 				IfStmt ifStmt = (IfStmt)unit;
 				System.out.println(ifStmt.getTarget());
-			}
+			}*/
 			if(unit instanceof IdentityStmt) {
 				IdentityStmt identityStmt = (IdentityStmt)unit;
 				Value lValue = identityStmt.getLeftOp();
@@ -101,10 +103,10 @@ public class Transformer extends SceneTransformer{
 					//绑定引用关系
 					ParameterRef pRef = (ParameterRef)rValue;
 					if(args == null)
-						return;
+						return null;
 					Value tmpv = args.get(pRef.getIndex());
 					Variable variable = null;
-					System.out.println(lastMethodString + tmpv);
+					//System.out.println(lastMethodString + tmpv);
 					if(tmpv instanceof Local)
 						variable = solver.variables.get(lastMethodString + (Local)tmpv);
 					if(tmpv instanceof FieldRef) 
@@ -136,6 +138,7 @@ public class Transformer extends SceneTransformer{
 						lVariable = solver.variable_fields.get(method_Name + (FieldRef)lValue);
 					}
 					if(lVariable == null) {
+						System.out.println("-----" + lValue);
 						lVariable = new Variable();
 						lVariable.var = method_Name + lValue;
 						if(lValue instanceof Local)
@@ -155,15 +158,15 @@ public class Transformer extends SceneTransformer{
 				Value lValue = assignStmt.getLeftOp();
 				Value rValue = assignStmt.getRightOp();
 				//新建对象
-				//System.out.println(rValue.getClass());
+				//System.err.println(rValue.getClass());
 				Variable rVariable = null;
-				if(rValue instanceof AnyNewExpr) {
+				if(rValue instanceof AnyNewExpr || rValue instanceof NewArrayExpr) {
 					//处理新建数组
 					rVariable = new Variable();
 					rVariable.memorySet.add(allocateID);
 					solver.alloc_variables.put(new Integer(allocateID), rVariable);
 					//solver.addVar((Local)rValue, allocateID);
-					if(rValue instanceof NewArrayExpr) {}
+					//if(rValue instanceof NewArrayExpr) {}
 					//添加新建变量标号
 					allocateID = 0;
 				}
@@ -185,12 +188,26 @@ public class Transformer extends SceneTransformer{
 					}
 				}
 				else if(rValue instanceof ArrayRef) {
+					ArrayRef arrayRef = (ArrayRef)rValue;
+					rVariable = solver.variables.get(method_Name + arrayRef.getBase());
 					//数组不做处理
 				}
+				else if(rValue instanceof InvokeExpr) {
+					InvokeExpr invokeExpr = (InvokeExpr)rValue;
+					if(invokeExpr instanceof InstanceInvokeExpr) {
+						SootMethod sootMethod = invokeExpr.getMethod();
+						String methodName = sootMethod.getSignature();
+						if(methods.contains(methodName))
+							return null;
+						Variable variable = solver.variables.get(method_Name + ((InstanceInvokeExpr) invokeExpr).getBase());
+						methods.add(methodName);
+						rVariable = SolveMethod(sootMethod, method_Name, invokeExpr.getArgs(), variable, methods, num);
+						methods.remove(methods.size() - 1);
+					}
+				}
 				Variable lVariable = null;
-				System.out.println(rVariable);
 				if(rVariable != null) {
-					//System.out.println(lValue.getClass());
+					System.err.println(lValue.getClass());
 					if(lValue instanceof Local) {
 						//System.out.println(lValue);
 						lVariable = solver.variables.get(method_Name + (Local)lValue);
@@ -214,6 +231,8 @@ public class Transformer extends SceneTransformer{
 						}
 					}
 					else if(lValue instanceof ArrayRef) {
+						ArrayRef arrayRef = (ArrayRef)lValue;
+						lVariable = solver.variables.get(method_Name + arrayRef.getBase());
 						//数组暂不处理
 					}
 					else {
@@ -222,6 +241,14 @@ public class Transformer extends SceneTransformer{
 					lVariable.assignVariable.add(rVariable);
 					lVariable.assign(rVariable, isinscope, solver.variables, solver.memory_variables);
 				}
+			}
+			else if(unit instanceof ReturnStmt) {
+				ReturnStmt returnStmt = (ReturnStmt)unit;
+				Value retvalue = returnStmt.getOp();
+				if(retvalue instanceof Local)
+					return solver.variables.get(method_Name + retvalue);
+				if(retvalue instanceof FieldRef)
+					return solver.variable_fields.get(method_Name + retvalue);
 			}
 			else if(unit instanceof InvokeStmt) {
 				//System.out.println("---" + unit);
@@ -232,14 +259,13 @@ public class Transformer extends SceneTransformer{
 						SootMethod sootMethod = invokeExpr.getMethod();
 						String methodName = sootMethod.getSignature();
 						if(methods.contains(methodName))
-							return;
+							return null;
 						//if(methodName.equals("<java.lang.Object: void <init>()>"))
 							//return;
 						Variable variable = solver.variables.get(method_Name + ((InstanceInvokeExpr) invokeExpr).getBase());
 						methods.add(methodName);
 						SolveMethod(sootMethod, method_Name, invokeExpr.getArgs(), variable, methods, num);
 						methods.remove(methods.size() - 1);
-						//暂时未完成
 					}
 					else {
 						String methodName = invokeExpr.getMethod().getSignature();
@@ -262,5 +288,6 @@ public class Transformer extends SceneTransformer{
 			e.printStackTrace();
 			System.exit(0);
 		}
+		return null;
 	}
 }

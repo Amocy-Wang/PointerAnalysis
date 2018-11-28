@@ -32,9 +32,16 @@ public class FieldSensitivity {
     Benchmark.alloc(4);
     B e = new B();
     assign(a, c);
-    B d = c.f;
-
+    B d = e;
+    for(int i = 0; i < 2; ++i)
+    	d = c.getF();
+    Benchmark.alloc(5);
+    String[] aStrings = new String[10];
+    
     Benchmark.test(1, d); // expected: 1
+    Benchmark.test(2, c.getF());
+    Benchmark.test(3, c.getH());
+    Benchmark.test(3, aStrings[0]);
   }
 
   public static void main(String[] args) {

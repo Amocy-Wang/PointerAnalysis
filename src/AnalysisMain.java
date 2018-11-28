@@ -5,10 +5,13 @@ import soot.Transform;
 
 public class AnalysisMain {
 	static String codepath = "code";//"/Users/zqh/Downloads/project1/code";
-	// args[0] = "/root/workspace/code"
-	// args[1] = "test.Hello"	
+	static String classname = "test.MyTest4";
 	public static void main(String[] args) {		
 		//String jdkLibPath = System.getProperty("java.home")+"/lib/"; // "/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/";
+		if(args.length == 2) {
+			codepath = args[0];
+			classname = args[1];
+		}
 		String classpath = codepath 
 				+ File.pathSeparator + codepath + File.separator + "rt.jar"
 				+ File.pathSeparator + codepath + File.separator + "jce.jar";	
@@ -19,7 +22,7 @@ public class AnalysisMain {
 			"-p", "cg.spark", "enabled:true",
 			"-p", "wjtp.mypta", "enabled:true",
 			"-soot-class-path", classpath,
-			"test.FieldSensitivity"//args[1]				
+			classname//args[1]				
 		});
 	}
 
