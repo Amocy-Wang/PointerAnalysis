@@ -1,3 +1,4 @@
+import java.util.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.HashMap;
@@ -20,6 +21,9 @@ public class Solver {
 	public HashMap<String, Variable> variables = new HashMap<>();
 	public HashMap<String, Variable> variable_fields = new HashMap<>();
 	public HashMap<String, Variable> memory_variables = new HashMap<>();
+	public List<Integer> allID = new ArrayList<>();
+	public List<Integer> queryID = new ArrayList<>();
+	public int cnt;
 	public void addQuery(int id, Local local) {
 		queries.put(new Integer(id), local);
 		return;
@@ -209,6 +213,16 @@ public class Solver {
 				System.out.print(x + " ");
 			}
 			System.out.println();
+		}
+	}
+	public void solve_e() {
+	    allID.add(0);
+		for(int i = 0; i < cnt ; i ++){
+		    System.out.print(queryID.get(i) + ":");
+		    for(int elm:allID){
+				System.out.print(elm + " ");
+			}
+			System.out.print("\n");
 		}
 	}
 }

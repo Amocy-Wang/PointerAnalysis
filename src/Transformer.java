@@ -34,7 +34,10 @@ public class Transformer extends SceneTransformer{
 			 solver.solve();
 		 }
 		 catch(Exception e) {
-			 e.printStackTrace();//System.out.println("error");
+			 //e.printStackTrace();//System.out.println("error");
+			 SootMethod mainMethod_e = Scene.v().getMainMethod();
+			 SolveMethod_e(mainMethod_e,"main", null, null, new ArrayList<>(), 0);
+			 solver.solve_e();
 		 }
 	}
 	void gothroughGraph(HashMap<Unit, Integer> isinscope, UnitGraph graph, Unit unit, String method_Name, ArrayList<Unit> t) {
@@ -64,6 +67,23 @@ public class Transformer extends SceneTransformer{
 			gothroughGraph(isinscope, graph, i.next(), method_Name, t);
 		}
 		t.remove(t.size() - 1);
+	}
+	Variable SolveMethod_e(SootMethod method, String lastMethodString, List<Value> args, Variable thisVar, ArrayList<String> methods, int UnitNum) {
+		UnitGraph graph = new BriefUnitGraph(method.getActiveBody());
+		if(!graphnum.containsKey(method.getSignature())) {
+			HashMap<Unit, Integer> isinscope = new HashMap<>();
+			graphnum.put(method.getSignature(), new Integer(0));
+			gothroughGraph(isinscope, graph, graph.getHeads().iterator().next(), method.getSignature(), new ArrayList<>());
+			methodUnit.put(method.getSignature(), isinscope);
+		}
+		HashMap<Unit, Integer> isinscope = methodUnit.get(method.getSignature());
+		int num = 0;
+		Variable ans = null;
+		for(Unit u:method.getActiveBody().getUnits()){
+			ans = SolveUnit_e(u, lastMethodString + method.getSignature() + UnitNum, lastMethodString, args, thisVar, isinscope.get(u) != graphnum.get(method.getSignature()), methods, num);
+			num += 1;
+		}
+		return ans;
 	}
 	Variable SolveMethod(SootMethod method, String lastMethodString, List<Value> args, Variable thisVar, ArrayList<String> methods, int UnitNum) {
 		//System.out.println("---" + lastMethodString);
@@ -279,6 +299,38 @@ public class Transformer extends SceneTransformer{
                             Object local = (Object) invokeArgs.get(1);
                             solver.queries.put(id, local);
                             solver.queries_methodname.put(id, method_Name);
+						}
+					}
+				}
+			}
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			System.exit(0);
+		}
+		return null;
+	}
+	Variable SolveUnit_e(Unit unit, String method_Name, String lastMethodString, List<Value> args, Variable thisVar, boolean isinscope, ArrayList<String> methods, int num) {
+		try{
+			if(unit instanceof InvokeStmt) {
+				InvokeExpr invokeExpr = ((InvokeStmt)unit).getInvokeExpr();
+				if(invokeExpr != null) {
+					if(invokeExpr instanceof InstanceInvokeExpr) {
+					}
+					else {
+						String methodName = invokeExpr.getMethod().getSignature();
+						List<Value> invokeArgs = invokeExpr.getArgs();
+						if(methodName.equals("<benchmark.internal.Benchmark: void alloc(int)>")) {
+							int allocId = ((IntConstant) invokeArgs.get(0)).value;
+							solver.allID.add(allocId);
+						}
+						if(methodName.equals("<benchmark.internal.Benchmark: void test(int,java.lang.Object)>")) {
+							int id = ((IntConstant) invokeArgs.get(0)).value;
+							Object local = (Object) invokeArgs.get(1);
+							solver.queries.put(id, local);
+							solver.queries_methodname.put(id, method_Name);
+							solver.cnt += 1;
+							solver.queryID.add(id);
 						}
 					}
 				}
